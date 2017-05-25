@@ -60,16 +60,13 @@ func loadPackages(filepath string) (packages []string, err error) {
 	}
 }
 
-func goGet(packageName string) bool {
-	fmt.Printf("> Go Get: %s\n", packageName)
-
-	if _, err := exec.Command("go", "get", "-u", packageName).CombinedOutput(); err == nil {
-		return true
+// do: go get -u packageName
+func goGet(packageName string) (string, error) {
+	if b, err := exec.Command("go", "get", "-u", packageName).CombinedOutput(); err == nil {
+		return string(b), nil
 	} else {
-		fmt.Printf("* Failed to go get: %s\n", err.Error())
+		return string(b), err
 	}
-
-	return false
 }
 
 func printUsage() {
@@ -113,6 +110,7 @@ github.com/motemen/gore
 	os.Exit(0)
 }
 
+// check if given params are given
 func paramExists(params []string, shortParam string, longParam string) bool {
 	for _, param := range params {
 		if param == shortParam || param == longParam {
@@ -136,8 +134,12 @@ func main() {
 
 	if packages, err := loadPackages(goGetsFilepath); err == nil {
 		for _, pkg := range packages {
-			if !goGet(pkg) {
-				fmt.Printf("* Failed to get package: %s\n", pkg)
+			fmt.Printf("> go get -u %s", pkg)
+
+			if msg, err := goGet(pkg); err == nil {
+				fmt.Printf(" => successful\n")
+			} else {
+				fmt.Printf(" => failed: %s\n%s----\n", err, msg)
 			}
 		}
 	} else {
