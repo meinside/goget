@@ -132,7 +132,11 @@ func main() {
 
 	goGetsFilepath := strings.Join([]string{getHomePath(), GogetsFilename}, string(filepath.Separator))
 
+	fmt.Printf(">>> Loading packages from: %s\n", goGetsFilepath)
+
 	if packages, err := loadPackages(goGetsFilepath); err == nil {
+		fmt.Println()
+
 		for _, pkg := range packages {
 			fmt.Printf("> go get -u %s", pkg)
 
@@ -143,6 +147,6 @@ func main() {
 			}
 		}
 	} else {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 	}
 }
