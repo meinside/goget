@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	CommentMarker  = "#"
-	GogetsFilename = ".gogets"
+	commentMarker  = "#"
+	gogetsFilename = ".gogets"
 )
 
 func getHomePath() string {
@@ -27,7 +27,9 @@ func getHomePath() string {
 }
 
 func loadPackages(filepath string) (packages []string, err error) {
-	if file, err := os.Open(filepath); err == nil {
+	file, err := os.Open(filepath)
+
+	if err == nil {
 		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
@@ -41,7 +43,7 @@ func loadPackages(filepath string) (packages []string, err error) {
 			line = strings.TrimSpace(scanner.Text())
 
 			// skip comments
-			if strings.HasPrefix(line, CommentMarker) {
+			if strings.HasPrefix(line, commentMarker) {
 				continue
 			}
 
@@ -55,18 +57,29 @@ func loadPackages(filepath string) (packages []string, err error) {
 		}
 
 		return packages, nil
-	} else {
-		return []string{}, err
 	}
+
+	return []string{}, err
 }
 
 // do: go get -u packageName
 func goGet(packageName string) (string, error) {
-	if b, err := exec.Command("go", "get", "-u", packageName).CombinedOutput(); err == nil {
-		return string(b), nil
-	} else {
-		return string(b), err
+	// move to $HOME, and
+	usr, err := user.Current()
+	if err == nil {
+		if err = os.Chdir(usr.HomeDir); err == nil {
+			var b []byte
+			b, err = exec.Command("go", "get", "-u", packageName).CombinedOutput()
+
+			if err == nil {
+				return string(b), nil
+			}
+
+			return string(b), err
+		}
 	}
+
+	return "", err
 }
 
 func printUsage() {
@@ -130,7 +143,7 @@ func main() {
 		printSample()
 	}
 
-	goGetsFilepath := strings.Join([]string{getHomePath(), GogetsFilename}, string(filepath.Separator))
+	goGetsFilepath := strings.Join([]string{getHomePath(), gogetsFilename}, string(filepath.Separator))
 
 	fmt.Printf(">>> Loading packages from: %s\n", goGetsFilepath)
 
