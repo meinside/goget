@@ -64,22 +64,13 @@ func loadPackages(filepath string) (packages []string, err error) {
 
 // do: go get -u packageName
 func goGet(packageName string) (string, error) {
-	// move to $HOME, and
-	usr, err := user.Current()
+	b, err := exec.Command("go", "get", "-u", packageName).CombinedOutput()
+
 	if err == nil {
-		if err = os.Chdir(usr.HomeDir); err == nil {
-			var b []byte
-			b, err = exec.Command("go", "get", "-u", packageName).CombinedOutput()
-
-			if err == nil {
-				return string(b), nil
-			}
-
-			return string(b), err
-		}
+		return string(b), nil
 	}
 
-	return "", err
+	return string(b), err
 }
 
 func printUsage() {
@@ -143,23 +134,30 @@ func main() {
 		printSample()
 	}
 
-	goGetsFilepath := strings.Join([]string{getHomePath(), gogetsFilename}, string(filepath.Separator))
+	homeDir := getHomePath()
+	goGetsFilepath := strings.Join([]string{homeDir, gogetsFilename}, string(filepath.Separator))
 
 	fmt.Printf(">>> Loading packages from: %s\n", goGetsFilepath)
 
-	if packages, err := loadPackages(goGetsFilepath); err == nil {
-		fmt.Println()
+	// chdir to $HOME,
+	if err := os.Chdir(homeDir); err == nil {
+		if packages, err := loadPackages(goGetsFilepath); err == nil {
+			fmt.Println()
 
-		for _, pkg := range packages {
-			fmt.Printf("> go get -u %s", pkg)
+			for _, pkg := range packages {
+				fmt.Printf("> go get -u %s ... ", pkg)
 
-			if msg, err := goGet(pkg); err == nil {
-				fmt.Printf(" => successful\n")
-			} else {
-				fmt.Printf(" => failed: %s\n%s----\n", err, msg)
+				if msg, err := goGet(pkg); err == nil {
+					fmt.Printf("=> successful\n")
+				} else {
+					fmt.Printf("=> failed: %s\n%s----\n", err, msg)
+				}
 			}
+		} else {
+			fmt.Println(err)
 		}
 	} else {
 		fmt.Println(err)
 	}
+
 }
