@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -148,12 +149,12 @@ func main() {
 			_stdout.Println()
 
 			for _, pkg := range packages {
-				_stdout.Printf("> go get -u %s ... ", pkg)
+				fmt.Printf("> go get -u %s ... ", pkg)
 
 				if msg, err := goGet(pkg); err == nil {
-					_stdout.Printf("=> successful\n")
+					fmt.Printf("=> successful\n")
 				} else {
-					_stdout.Printf("=> failed: %s\n%s----\n", err, msg)
+					fmt.Printf("=> failed: %s\n%s----\n", err, msg)
 				}
 			}
 		} else {
