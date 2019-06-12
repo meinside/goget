@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -17,9 +16,12 @@ const (
 	gogetsFilename = ".gogets"
 )
 
+var _stdout = log.New(os.Stdout, "", 0)
+var _stderr = log.New(os.Stderr, "", 0)
+
 func getHomePath() string {
 	if usr, err := user.Current(); err != nil {
-		log.Fatal(err)
+		_stderr.Fatal(err)
 	} else {
 		return usr.HomeDir
 	}
@@ -74,7 +76,7 @@ func goGet(packageName string) (string, error) {
 }
 
 func printUsage() {
-	fmt.Printf(`> Usage
+	_stdout.Printf(`> usage:
 
 # Show this help message
 
@@ -97,8 +99,9 @@ $ goget
 }
 
 func printSample() {
-	fmt.Printf(`# Sample .gogets file
-# $ go get github.com/meinside/goget
+	_stdout.Printf(`# sample .gogets file
+#
+# $ go get -u github.com/meinside/goget
 # $ goget
 #
 # then it will automatically 'go get -u' all packages listed in this file(~/.gogets)
@@ -137,27 +140,27 @@ func main() {
 	homeDir := getHomePath()
 	goGetsFilepath := strings.Join([]string{homeDir, gogetsFilename}, string(filepath.Separator))
 
-	fmt.Printf(">>> Loading packages from: %s\n", goGetsFilepath)
+	_stdout.Printf(">>> loading packages from: %s\n", goGetsFilepath)
 
 	// chdir to $HOME,
 	if err := os.Chdir(homeDir); err == nil {
 		if packages, err := loadPackages(goGetsFilepath); err == nil {
-			fmt.Println()
+			_stdout.Println()
 
 			for _, pkg := range packages {
-				fmt.Printf("> go get -u %s ... ", pkg)
+				_stdout.Printf("> go get -u %s ... ", pkg)
 
 				if msg, err := goGet(pkg); err == nil {
-					fmt.Printf("=> successful\n")
+					_stdout.Printf("=> successful\n")
 				} else {
-					fmt.Printf("=> failed: %s\n%s----\n", err, msg)
+					_stdout.Printf("=> failed: %s\n%s----\n", err, msg)
 				}
 			}
 		} else {
-			fmt.Println(err)
+			_stderr.Println(err)
 		}
 	} else {
-		fmt.Println(err)
+		_stderr.Println(err)
 	}
 
 }
