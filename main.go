@@ -27,6 +27,7 @@ var _stderr = log.New(os.Stderr, "", 0)
 var _commentRe = regexp.MustCompile(`\s*#.*$`)
 var _verRe = regexp.MustCompile(`([^@]+)@(.*?)$`)
 
+// get $HOME
 func getHomePath() string {
 	if usr, err := user.Current(); err != nil {
 		_stderr.Fatal(err)
@@ -36,6 +37,7 @@ func getHomePath() string {
 	return ""
 }
 
+// load packages from given path (.gogets file)
 func loadPackages(filepath string) (packages map[string]string, err error) {
 	file, err := os.Open(filepath)
 
@@ -72,6 +74,7 @@ func loadPackages(filepath string) (packages map[string]string, err error) {
 	return map[string]string{}, err
 }
 
+// parse given line to package name and tag
 func lineToPackageNameAndTag(line string) (packageName, tag string) {
 	packageName = line
 	tag = latestTag
@@ -89,14 +92,16 @@ func lineToPackageNameAndTag(line string) (packageName, tag string) {
 	return packageName, tag
 }
 
+// check if go module is on by default
 func isGoModDefault() bool {
+	// eg: "go1.15.8", "go1.16"
 	segments := strings.Split(strings.Replace(runtime.Version(), "go", "", 1), ".")
 	if len(segments) >= 2 {
 		major, _ := strconv.ParseInt(segments[0], 10, 32)
 		minor, _ := strconv.ParseInt(segments[1], 10, 32)
 
 		// GO111MODULE=on since 1.16
-		if major >= 1 && minor < 16 {
+		if major == 1 && minor < 16 {
 			return false
 		}
 
@@ -106,6 +111,7 @@ func isGoModDefault() bool {
 	return false
 }
 
+// run command `go install` or `go get` with given package name and tag
 func runGoInstallCommand(packageName, tag string) (output []byte, err error) {
 	// for older versions with GOPATH mode
 	if !isGoModDefault() {
@@ -117,7 +123,7 @@ func runGoInstallCommand(packageName, tag string) (output []byte, err error) {
 	return exec.Command("go", "install", packageName+"@"+tag).CombinedOutput()
 }
 
-// do: go install packageName@tag
+// do install
 func goInstall(packageName, tag string) (output string, err error) {
 	var b []byte
 	if b, err = runGoInstallCommand(packageName, tag); err == nil {
@@ -131,6 +137,7 @@ func goInstall(packageName, tag string) (output string, err error) {
 	return string(b), err
 }
 
+// print usage to stdout
 func printUsage() {
 	_stdout.Printf(`> usage:
 
@@ -154,6 +161,7 @@ $ goget
 	os.Exit(0)
 }
 
+// print sample config file to stdout
 func printSample() {
 	_stdout.Printf(`# sample .gogets file
 #
