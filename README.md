@@ -16,7 +16,7 @@ $ go get -u github.com/meinside/goget
 
 ```bash
 # print a sample .gogets file
-$ goget -g
+$ goget -g > ~/.gogets
 
 # install/update packages in .gogets file
 $ goget
