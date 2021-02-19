@@ -9,16 +9,23 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 )
 
 const (
 	commentMarker  = "#"
 	gogetsFilename = ".gogets"
+
+	latestTag = "latest"
 )
 
 var _stdout = log.New(os.Stdout, "", 0)
 var _stderr = log.New(os.Stderr, "", 0)
+
+var _commentRe = regexp.MustCompile(`\s*#.*$`)
+var _verRe = regexp.MustCompile(`([^@]+)@(.*?)$`)
 
 func getHomePath() string {
 	if usr, err := user.Current(); err != nil {
@@ -29,7 +36,7 @@ func getHomePath() string {
 	return ""
 }
 
-func loadPackages(filepath string) (packages []string, err error) {
+func loadPackages(filepath string) (packages map[string]string, err error) {
 	file, err := os.Open(filepath)
 
 	if err == nil {
@@ -39,8 +46,7 @@ func loadPackages(filepath string) (packages []string, err error) {
 		scanner.Split(bufio.ScanLines)
 
 		var line string
-		packages = []string{}
-		re := regexp.MustCompile(`\s*#.*$`)
+		packages = map[string]string{}
 
 		for scanner.Scan() {
 			line = strings.TrimSpace(scanner.Text())
@@ -51,27 +57,76 @@ func loadPackages(filepath string) (packages []string, err error) {
 			}
 
 			// remove trailing comments
-			line = re.ReplaceAllString(line, "")
+			line = _commentRe.ReplaceAllString(line, "")
 
 			// skip empty line
 			if len(line) > 0 {
-				packages = append(packages, line)
+				name, tag := lineToPackageNameAndTag(line)
+				packages[name] = tag
 			}
 		}
 
 		return packages, nil
 	}
 
-	return []string{}, err
+	return map[string]string{}, err
 }
 
-// do: go install packageName
-func goInstall(packageName string) (string, error) {
-	b, err := exec.Command("go", "install", packageName).CombinedOutput()
+func lineToPackageNameAndTag(line string) (packageName, tag string) {
+	packageName = line
+	tag = latestTag
 
-	if err == nil {
+	if _verRe.Match([]byte(line)) {
+		matches := _verRe.FindStringSubmatch(line)
+
+		count := len(matches)
+		if count > 2 {
+			packageName = matches[count-2]
+			tag = matches[count-1]
+		}
+	}
+
+	return packageName, tag
+}
+
+func isGoModDefault() bool {
+	segments := strings.Split(strings.Replace(runtime.Version(), "go", "", 1), ".")
+	if len(segments) >= 2 {
+		major, _ := strconv.ParseInt(segments[0], 10, 32)
+		minor, _ := strconv.ParseInt(segments[1], 10, 32)
+
+		// GO111MODULE=on since 1.16
+		if major >= 1 && minor < 16 {
+			return false
+		}
+
+		return true
+	}
+
+	return false
+}
+
+func runGoInstallCommand(packageName, tag string) (output []byte, err error) {
+	// for older versions with GOPATH mode
+	if !isGoModDefault() {
+		fmt.Printf("> go get -u %s ... ", packageName)
+		return exec.Command("go", "get", "-u", packageName).CombinedOutput()
+	}
+
+	fmt.Printf("> go install %s@%s ... ", packageName, tag)
+	return exec.Command("go", "install", packageName+"@"+tag).CombinedOutput()
+}
+
+// do: go install packageName@tag
+func goInstall(packageName, tag string) (output string, err error) {
+	var b []byte
+	if b, err = runGoInstallCommand(packageName, tag); err == nil {
+		fmt.Printf("=> successful\n")
+
 		return string(b), nil
 	}
+
+	fmt.Printf("=> failed: %s\n%s----\n", err, string(b))
 
 	return string(b), err
 }
@@ -107,11 +162,11 @@ func printSample() {
 #
 # then it will automatically 'go install' all packages listed in this file(~/.gogets)
 
-# official
+# without version (latest)
 golang.org/x/tools/cmd/godoc
 
-# useful packages
-github.com/mailgun/godebug
+# with version tag
+github.com/mailgun/godebug@latest
 github.com/motemen/gore@v0.5.2
 `)
 
@@ -139,14 +194,8 @@ func run() {
 		if packages, err := loadPackages(goGetsFilepath); err == nil {
 			_stdout.Println()
 
-			for _, pkg := range packages {
-				fmt.Printf("> go install %s ... ", pkg)
-
-				if msg, err := goInstall(pkg); err == nil {
-					fmt.Printf("=> successful\n")
-				} else {
-					fmt.Printf("=> failed: %s\n%s----\n", err, msg)
-				}
+			for pkg, tag := range packages {
+				goInstall(pkg, tag)
 			}
 		} else {
 			_stderr.Println(err)
