@@ -5,7 +5,7 @@ List Go package names in your **~/.gogets** file and install/update all of them 
 ## Install
 
 ```bash
-$ go get -u github.com/meinside/goget
+$ go install github.com/meinside/goget
 ```
 
 ## Usage
