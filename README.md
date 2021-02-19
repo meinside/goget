@@ -5,7 +5,11 @@ List Go package names in your **~/.gogets** file and install/update all of them 
 ## Install
 
 ```bash
+# with go 1.16+
 $ go install github.com/meinside/goget
+
+# or with older versions
+$ go get -u github.com/meinside/goget
 ```
 
 ## Usage
