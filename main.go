@@ -65,9 +65,9 @@ func loadPackages(filepath string) (packages []string, err error) {
 	return []string{}, err
 }
 
-// do: go get -u packageName
-func goGet(packageName string) (string, error) {
-	b, err := exec.Command("go", "get", "-u", packageName).CombinedOutput()
+// do: go install packageName
+func goInstall(packageName string) (string, error) {
+	b, err := exec.Command("go", "install", packageName).CombinedOutput()
 
 	if err == nil {
 		return string(b), nil
@@ -102,17 +102,17 @@ $ goget
 func printSample() {
 	_stdout.Printf(`# sample .gogets file
 #
-# $ go get -u github.com/meinside/goget
+# $ go install github.com/meinside/goget
 # $ goget
 #
-# then it will automatically 'go get -u' all packages listed in this file(~/.gogets)
+# then it will automatically 'go install' all packages listed in this file(~/.gogets)
 
 # official
 golang.org/x/tools/cmd/godoc
 
 # useful packages
 github.com/mailgun/godebug
-github.com/motemen/gore
+github.com/motemen/gore@v0.5.2
 `)
 
 	os.Exit(0)
@@ -128,16 +128,7 @@ func paramExists(params []string, shortParam string, longParam string) bool {
 	return false
 }
 
-func main() {
-	params := os.Args[1:]
-
-	// check params
-	if paramExists(params, "-h", "--help") {
-		printUsage()
-	} else if paramExists(params, "-g", "--generate") {
-		printSample()
-	}
-
+func run() {
 	homeDir := getHomePath()
 	goGetsFilepath := strings.Join([]string{homeDir, gogetsFilename}, string(filepath.Separator))
 
@@ -149,9 +140,9 @@ func main() {
 			_stdout.Println()
 
 			for _, pkg := range packages {
-				fmt.Printf("> go get -u %s ... ", pkg)
+				fmt.Printf("> go install %s ... ", pkg)
 
-				if msg, err := goGet(pkg); err == nil {
+				if msg, err := goInstall(pkg); err == nil {
 					fmt.Printf("=> successful\n")
 				} else {
 					fmt.Printf("=> failed: %s\n%s----\n", err, msg)
@@ -163,5 +154,17 @@ func main() {
 	} else {
 		_stderr.Println(err)
 	}
+}
 
+func main() {
+	params := os.Args[1:]
+
+	// check params
+	if paramExists(params, "-h", "--help") {
+		printUsage()
+	} else if paramExists(params, "-g", "--generate") {
+		printSample()
+	}
+
+	run()
 }
