@@ -175,7 +175,7 @@ golang.org/x/tools/cmd/godoc
 
 # with version tag
 github.com/mailgun/godebug@latest
-github.com/motemen/gore@v0.5.2
+github.com/motemen/gore/cmd/gore@v0.5.2
 `)
 
 	os.Exit(0)
