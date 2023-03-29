@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	commentMarker  = "#"
-	gogetsFilename = ".gogets"
+	applicationName = "goget"
+
+	commentMarker    = "#"
+	packagesFilename = "packages"
 
 	latestTag = "latest"
 )
@@ -27,8 +29,8 @@ var _stderr = log.New(os.Stderr, "", 0)
 var _commentRe = regexp.MustCompile(`\s*#.*$`)
 var _verRe = regexp.MustCompile(`([^@]+)@(.*?)$`)
 
-// get $HOME
-func getHomePath() string {
+// get "$HOME"
+func getHomeDir() string {
 	if usr, err := user.Current(); err != nil {
 		_stderr.Fatal(err)
 	} else {
@@ -37,7 +39,27 @@ func getHomePath() string {
 	return ""
 }
 
-// load packages from given path (.gogets file)
+// get "$XDG_CONFIG_HOME/goget"
+func getConfigDir() string {
+	// https://xdgbasedirectoryspecification.com
+	configDir := os.Getenv("XDG_CONFIG_HOME")
+
+	// If the value of the environment variable is unset, empty, or not an absolute path, use the default
+	if configDir == "" || configDir[0:1] != "/" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			_stderr.Fatalf("* failed to get home directory (%s)\n", err)
+		} else {
+			configDir = filepath.Join(homeDir, ".config", applicationName)
+		}
+	} else {
+		configDir = filepath.Join(configDir, applicationName)
+	}
+
+	return configDir
+}
+
+// load packages from given filepath
 func loadPackages(filepath string) (packages map[string]string, err error) {
 	file, err := os.Open(filepath)
 
@@ -147,28 +169,28 @@ $ goget -h
 $ goget --help
 
 
-# Generate a sample .gogets file
+# Generate a sample %[2]s file
 
 $ goget -g
 $ goget --generate
 
 
-# Install/update all Go packages listed in ~/.gogets
+# Install/update all Go packages listed in $XDG_CONFIG_HOME/%[1]s/%[2]s
 
 $ goget
-`)
+`, applicationName, packagesFilename)
 
 	os.Exit(0)
 }
 
 // print sample config file to stdout
 func printSample() {
-	_stdout.Printf(`# sample .gogets file
+	_stdout.Printf(`# sample '$XDG_CONFIG_HOME/%[1]s/%[2]s' file
 #
 # $ go install github.com/meinside/goget
 # $ goget
 #
-# then it will automatically 'go install' all packages listed in this file(~/.gogets)
+# then it will automatically 'go install' all packages listed in this file($XDG_CONFIG_HOME/%[1]s/%[2]s)
 
 # without version (latest)
 golang.org/x/tools/cmd/godoc
@@ -176,7 +198,7 @@ golang.org/x/tools/cmd/godoc
 # with version tag
 github.com/mailgun/godebug@latest
 github.com/motemen/gore/cmd/gore@v0.5.2
-`)
+`, applicationName, packagesFilename)
 
 	os.Exit(0)
 }
@@ -192,8 +214,9 @@ func paramExists(params []string, shortParam string, longParam string) bool {
 }
 
 func run() {
-	homeDir := getHomePath()
-	goGetsFilepath := strings.Join([]string{homeDir, gogetsFilename}, string(filepath.Separator))
+	homeDir := getHomeDir()
+	configDir := getConfigDir()
+	goGetsFilepath := strings.Join([]string{configDir, packagesFilename}, string(filepath.Separator))
 
 	_stdout.Printf(">>> loading packages from: %s\n", goGetsFilepath)
 
