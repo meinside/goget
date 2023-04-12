@@ -26,3 +26,28 @@ $ goget -g > $XDG_CONFIG_HOME/goget/packages
 # install/update packages in `packages` file
 $ goget
 ```
+
+## Example of `packages` file
+
+```
+# $XDG_CONFIG_HOME/goget/packages
+
+# official packages
+golang.org/x/tools/cmd/godoc
+github.com/tools/godep
+
+# useful packages
+github.com/google/gops
+
+# others
+github.com/go-delve/delve/cmd/dlv
+golang.org/x/tools/gopls@latest
+#github.com/golangci/golangci-lint/cmd/golangci-lint@v1.47.2
+github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+github.com/rclone/rclone
+```
+
+## License
+
+MIT
+
