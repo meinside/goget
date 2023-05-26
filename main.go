@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/meinside/version-go"
 )
 
 const (
@@ -161,7 +163,7 @@ func goInstall(packageName, tag string) (output string, err error) {
 
 // print usage to stdout
 func printUsage() {
-	_stdout.Printf(`> usage:
+	_stdout.Printf(`> Usage of %[1]s %[3]s:
 
 # Show this help message
 
@@ -178,7 +180,7 @@ $ goget --generate
 # Install/update all Go packages listed in $XDG_CONFIG_HOME/%[1]s/%[2]s
 
 $ goget
-`, applicationName, packagesFilename)
+`, applicationName, packagesFilename, version.Minimum())
 
 	os.Exit(0)
 }
